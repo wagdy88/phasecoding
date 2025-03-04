@@ -1,0 +1,169 @@
+load_file("nrngui.hoc")
+load_file("cell.hoc")
+cvode_active(1) 
+
+objref NeuroCell[2], stim[2]
+objref synD[2][400], nsD[2][400], ncD[2][400], ns, nt[2]
+objref syn[3], nt[2]
+objref fseq
+double  DistSD[2][400], DistSDm[2], ds[2]
+
+N = 2
+for j=0, N-1{
+	NeuroCell[j] = new CA1_PC_cAC_sig() 
+	NeuroCell[j].init()
+}
+
+forall print secname() //elenca tutti i segmenti e i loro nomi
+
+celsius=34
+
+
+aI = 200
+Nsyn=20
+ws=5e-4
+wi = 0
+ds0=50
+ds1=150
+Dsd=40
+FreqInp = 100
+chnoise = 0
+
+	xpanel("variables")
+//	xvalue("Istim Amplitude - aI","aI",0,"wca()")
+	xvalue("Synaptic Conduptance - ws","ws",0,"wca()")
+	xvalue("Inhibition weight - wi","wi",0,"wca()")
+	xvalue("d0","ds0",0,"wca()")
+	xvalue("d1","ds1",0,"wca()")
+	xvalue("f (Hz)","FreqInp",0,"wca()")
+	xvalue("Stoch (0/1)","chnoise",0,"wca()")
+	xpanel()
+
+ds[0] = ds0
+ds[1] = ds1
+
+fseq = new File("seq.txt")
+fseq.ropen()
+xseed=fseq.scanvar()
+fseq.close()
+
+mcell_ran4_init(xseed)
+rrr = mcell_ran4(&xseed)
+print rrr
+
+//********************************************
+
+/*
+forall {
+        print secname()
+        for i=0,n3d()-1 print i, x3d(i), y3d(i), z3d(i), diam3d(i)
+}
+*/
+
+for j=1, N-1 {
+	NeuroCell[j].soma {
+	    print secname(), " Nsecs: ", n3d()
+    	for i=0,n3d()-1 { 
+//    		print "BEFORE: ", i, x3d(i), y3d(i), z3d(i), diam3d(i)
+	    	pt3dchange(i, x3d(i)+400, y3d(i), z3d(i), diam3d(i))
+//    		print "AFTER : ", i, x3d(i), y3d(i), z3d(i), diam3d(i)
+		}
+	}
+}
+
+/*
+for j=0, N-1{
+	NeuroCell[j].soma {
+		stim[j] = new IClamp(0.5)
+		stim[j].del=20
+		stim[j].dur=100
+		stim[j].amp=aI
+	}
+}
+*/
+
+ns = new NetStim(0.5)       //Unico impulso di corrente per tutte le sinapsi
+ns.number = 1000000
+//ns.interval = 20          //20ms -> 1/(20e-3) = 50 Hz
+ns.interval = 1000/FreqInp  //interval in ms
+ns.start = 10
+ns.noise = chnoise
+
+for m = 0, (N-1) NeuroCell[m].soma {
+    syn[m]     = new ExpSyn(0.5)
+	syn[m].tau = 30
+	syn[m].e   = -80
+}
+
+for m = 0, (N-1) {
+	k = m+1
+	if ( m==(N-1) ) k=0
+	NeuroCell[m].soma nt[m] = new NetCon(&v(.5), syn[k], 0, 0, wi)
+}
+
+
+proc wca() {
+
+	for j=0, N-1{
+		NeuroCell[j].soma {
+//			stim[j].amp=aI
+			for ll=0,Nsyn-1 {
+		    	ncD[j][ll].weight = ws
+			}
+		}
+		nt[j].weight = wi
+	}
+	ds[0] = ds0
+	ds[1] = ds1
+    ns.noise = chnoise
+	ns.interval = 1000/FreqInp    //interval in ms
+	
+//    CreateShuffleSyn()
+}
+
+
+proc CreateShuffleSyn() {
+
+if (Dsd == 0) Dsd = 50  //max 400
+
+for m=0,N-1 {
+	access NeuroCell[m].soma
+	distance()
+	dm=0
+	for j=0,(Nsyn-1)  {
+
+		k=0
+		while(k==0){
+    		indAD = int(189*mcell_ran4(&xseed)) 
+ 			rrr = mcell_ran4(&xseed)
+
+ 			NeuroCell[m].apic[indAD] {
+ 				if ( (distance(rrr) > ds[m] && distance(rrr) < (ds[m]+Dsd) ) ) {
+					k=1
+//  				print indAD, distance(rrr) 
+    	    	}
+			}
+		}
+	    access NeuroCell[m].apic[indAD] // dendriti random
+
+	   	synD[m][j] = new Exp2Syn(rrr)     // nuova sinapsi a due tempi
+   		synD[m][j].tau1 = 0.5             // costante di attivazione   (ms)
+	   	synD[m][j].tau2 = 3               // costante di inattivazione (ms)
+   		synD[m][j].e    = 0               // sinapsi di tipo eccitatorio
+   		ncD[m][j] = new NetCon(ns,synD[m][j],0,0,ws) //Unico impulso di corrente per tutte le sinapsi
+
+		print m, j, indAD, synD[m][j].get_loc(),rrr
+
+	    DistSD[m][j] = distance(rrr)
+		dm = dm + DistSD[m][j]
+	}
+	DistSDm[m] = dm/Nsyn
+}
+print "      Synapsis shuffling - dSm[0] = ",DistSDm[0], " - dSm[1] = ",DistSDm[1] 
+print "                   Frequency (Hz) = ",1000/ns.interval, " - ISI (ms) = ",ns.interval
+print "                               ws = ",ws, " - wi = ",wi
+}
+
+CreateShuffleSyn()
+
+load_file("Ses.ses")

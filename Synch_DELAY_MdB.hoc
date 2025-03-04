@@ -1,0 +1,532 @@
+load_file("nrngui.hoc")
+load_file("cellM1.hoc")
+load_file("correl.hoc")
+cvode_active(1)
+
+//definiamo la temperatura di funzionamento, 
+//altrimenti neuron userebbe sempre quella del calamaro giagante pari a 6 gradi
+celsius=34
+
+// Migliore-Hines synchronization and gap junctions. 
+// olfactory bulb _correlation 
+// Tom & mc Tavish: sync cambiando la posizione delle sinapsi
+// i_membrane_ in CVode.use... insieme delle correnti in ingresso nel soma
+
+// migliore ascoli 2005 fixnseg (per le divisioni )
+
+// CIRCUITO TRISINAPTICO
+// 20 40 60 80 100Hz Poisson basali 5 morfologie ottimizzate
+
+//definizione delle variabili
+
+// relazione tra neuroni inibitori ed eccitatori. sul soma
+// Megias 2002 conta i numeri delle sinapsi
+// quanto interneuroni stanno contribuendo sul soma
+// grossezza dei dentriti 1.2 um
+
+objref stim[2], syn[2], apc[2]
+objref synD[2][400], nt[2][2], nsD[2][400], ncD[2][400], ns, ncS[2], randDen
+objref fseq, fv, finp,fout,fphi,fspk,fcorr,fc
+
+objref b, c, d, e
+objref b2,c2,d2,e2
+// stim, distrx, distry, cdistry, p, rand,syn[50],ns[50],nci[50]
+// Esti = new Vector(2,0) // extra neuron spike times interval vettori di 2 elementi inizializzati in 0
+
+double  vecAD[2][400], DistSD[2][400], DistSDm[2], dSDm[2], ds[2]
+double  tspk[2][1000], nspk[2], nspkm[2], f[2], Esti[1000], Esi[1000], corr[10000000], corrvi[10000000], tt[10000000]
+double  tspkprec[2],tspknext[2],i_spk[2], phi[2]
+strdef llab
+strdef fphin,foutn,fvn,fcn,ftn,fcrn
+
+objref C1, C2, tC1, tC2
+
+  Nexp    = 1
+  wi      = 0.05
+  ws      = 5e-4
+  Nsyn    = 20
+  ds[0]   = 100
+  ds[1]   = 150
+  Dsd     = 25
+  chnoise = 1
+  FreqInp = 60
+  del     = 2
+
+print "Nsyn=", Nsyn," wi=",wi," ws=",ws," ds0=",ds0," ds1=",ds1," Dsd=",Dsd," Noise=", chnoise," f=", FreqInp," Del=", del
+
+SynLoc = 0.5
+tstop=1000
+cvode.event(tstop)
+
+sprint(fcn,"Synchro_C_wi%g_dl%g.out",wi,del)
+fc = new File(fcn)
+fc.wopen()
+fc.printf("# Sm     Cm      C0      Dphim\n")
+
+sprint(ftn,"Synchro_Tspk_wi%g_dl%g.out",wi,del)
+fspk = new File(ftn)
+fspk.wopen()
+fspk.printf("# Ne  Nsyn  ws  wi    nspk[0] tspk[0]   nspk[1] tspk[1]\n")
+
+xseed=16327
+print xseed
+
+N   = 2    //Num neurons
+objref NC[2]
+for j=0, N-1{
+	NC[j] = new CA1_PC_cAC_sig() 
+	NC[j].init()
+}
+
+Napic = 189 
+
+for j=1, N-1 {
+	NC[j].soma {
+	    print secname(), " Nsecs: ", n3d()
+    	for i=0,n3d()-1 { 
+	    	pt3dchange(i, x3d(i)+400, y3d(i), z3d(i), diam3d(i))
+		}
+	}
+}
+
+ns = new NetStim(0.5)      //Unique current pulse for all the synapses
+ns.number = 1000000
+//ns.interval = 20          //20ms -> 1/(20e-3) = 50 Hz
+ns.interval = 1000/FreqInp  //interval in ms
+ns.start = 10
+ns.noise = chnoise
+
+for m = 0, (N-1) NC[m].soma {
+    syn[m] = new ExpSyn(0.5)
+	syn[m].tau=30
+	syn[m].e  =-80
+	
+    nspk[m] =0
+    nspkm[m]=0
+
+    apc[m] = new APCount(.5)
+    apc[m].thresh=0
+}
+
+for m = 0, (N-1) {
+	for k = 0,(N-1) {
+		NC[m].soma nt[m][k] = new NetCon(&v(.5), syn[k], 0, del, wi)
+	}
+}
+
+mcell_ran4_init(xseed)
+rrr = mcell_ran4(&xseed)
+print rrr
+
+for l = 0, N-1 {
+   	tspkprec[l] = 0
+	tspknext[l] = 0
+    i_spk[l]= 0
+	l2=1
+   	while ( tspk[l][l2] > 0) {
+	    tspk[l][l2] = 0
+	    l2 = l2 + 1
+	} 
+}
+
+for i = 0,999 {
+    Esti[i]=0.
+    for j=0,N-1 {
+	   tspk[j][i]=0.
+    }
+}
+
+for i = 0,399 {
+    for j=0,N-1 {
+	   vecAD[j][i] = 0
+	   DistSD[j][i] = 0
+    }
+}
+
+
+kcommon=0
+mincommon = 0
+NspikesTot =0
+deltats = 0.0
+
+b = new VBox()
+b.intercept(1)
+
+	c = new Graph()
+	c.size(0,2000,-1,1)
+	c.xaxis(1)
+	c.exec_menu("10% Zoom out")
+	c.color(2)
+	c.label(0.43,0.93,"Corr V1-V2")
+	c.label(0.49,0.0,"t")
+
+	d = new Graph()
+	d.size(0,2000,0,1)
+	d.xaxis(1)
+	d.exec_menu("10% Zoom out")
+	d.color(3)
+	d.label(0.43,0.93,"S(t)")
+	d.label(0.49,0.0,"t")
+		
+	e = new Graph()
+	e.size(0,2000,0,50)
+	e.xaxis(1)
+	e.exec_menu("10% Zoom out")
+	e.color(5)
+	e.label(0.45,0.93,"N_spikes")
+	e.label(0.49,0.0,"t")
+	
+	xpanel("")
+	xbutton("Shuffle syn. & reRun ", "runm()")
+	xpanel()
+	xpanel("variables")
+	xvalue("inter-soma Synaptic Inhibition - wi","wi",0,"wca()")
+	xvalue("Dendr Net Synaptic Conduptance - ws","ws",0,"wca()")
+	xpanel()
+	
+b.intercept(0)
+b.map()
+
+b2 = new VBox()
+b2.intercept(1)
+
+	c2 = new Graph()
+	c2.size(0,1,-1,1)
+	c2.xaxis(1)
+	c2.exec_menu("10% Zoom out")
+	c2.color(2)
+	c2.label(0.4,0.93,"<Corr V1-V2>")
+	c2.label(0.49,0.0,llab)
+		
+	d2 = new Graph()
+	d2.size(0,1,0,1)
+	d2.xaxis(1)
+	d2.exec_menu("10% Zoom out")
+	d2.color(3)
+	d2.label(0.4,0.93,"<S(t)>")
+	d2.label(0.49,0.0,llab)
+		
+	e2 = new Graph() 
+	e2.size(0,1,0,55)
+	e2.xaxis(1)
+	e2.exec_menu("5% Zoom out")
+	e2.color(5)
+	e2.label(0.42,0.93,"<Freq.>")
+	e2.label(0.49,0.0,llab)
+	
+b2.intercept(0)
+b2.map()
+
+
+
+proc advance() {    //Neuron time process
+	fadvance()      //each dt increment 
+
+    for l = 0, N-1 {
+		if ( apc[l].n > nspk[l] ) {  
+            
+    		 nspk[l] = apc[l].n 
+    		 tspk[l][nspk[l]] = t
+    		 NspikesTot = NspikesTot + 1
+
+             if (l == 0) fspk.printf("%d %d %g %g   %d %g   %d %g\n",Ne,Nsyn,ws,wi,nspk[0],t,nspk[1],0)
+             if (l == 1) fspk.printf("%d %d %g %g   %d %g   %d %g\n",Ne,Nsyn,ws,wi,nspk[0],0,nspk[1],t)
+
+    		 if (l == 0) e.mark(t,nspk[l],"o",8,1,1)
+    		 if (l == 1) e.mark(t,nspk[l],"t",8,1,1)
+    		 e.flush
+    	}
+	}
+
+    istep = istep+1
+    sum12 = sum12 + NC[0].soma.v*NC[1].soma.v*dt
+    sum1  = sum1  + NC[0].soma.v^2.*dt
+	sum2  = sum2  + NC[1].soma.v^2.*dt
+    
+    if ( istep == NstepsCorr ){
+       cc   = sum12/sqrt(abs(sum1*sum2))
+//       print Nwindowscorr, "cc ", cc, "ccvi ",ccvi, "sumI ",sumI, "sum1 ",sum1, "sumVI ",sumVI, "s_m ",s_med //, "c_m ",corr_med
+       corr[ic] = cc
+       tt[ic] = t
+       
+       c.color(1)
+       c.line(ic,cc)
+       c.flush
+              
+       ic = ic + 1
+       istep = 0
+       sum1  = 0
+       sum2  = 0
+       sum12 = 0
+       Nwindowscorr = Nwindowscorr + 1
+       corr_med   = corr_med   + cc
+    } 
+    if ( Ne == 1 ) {
+        fv.printf("%g %g %g %g \n", t, NC[0].soma.v, NC[1].soma.v, NC[1].apic[indAD].v)
+    }
+
+    tp=t
+}
+
+
+proc wca() {
+	for k = 0, N-1 {
+		for m = 0, N-1 {
+      		nt[k][m].weight=wi
+		}
+	}
+}
+
+proc CreateShuffleSyn() {
+
+for m=0,N-1 {
+	access NC[m].soma
+	distance()
+	dm=0
+	for j=0,(Nsyn-1)  {
+
+		k=0
+		while(k==0){
+    		indAD = int(Napic*mcell_ran4(&xseed)) 
+ 			rrr = mcell_ran4(&xseed)
+
+ 			NC[m].apic[indAD] {
+ 				if ( distance(rrr) > ds[m] && distance(rrr) < (ds[m]+Dsd) && diam(rrr) < 1.2 ) {
+					k=1
+//  				print indAD, distance(rrr) 
+    	    	}
+			}
+		}
+	    access NC[m].apic[indAD] // random dendrites
+
+	   	synD[m][j] = new Exp2Syn(rrr)     // nuova sinapsi a due tempi
+   		synD[m][j].tau1 = 0.5             // costante di attivazione   (ms)
+	   	synD[m][j].tau2 = 3               // costante di inattivazione (ms)
+   		synD[m][j].e    = 0               // sinapsi di tipo eccitatorio
+   		ncD[m][j] = new NetCon(ns,synD[m][j],0,0,ws) //Unico impulso di corrente per tutte le sinapsi
+
+//		print m, j, indAD, synD[m][j].get_loc(),rrr
+
+	    DistSD[m][j] = distance(rrr)
+		dm = dm + DistSD[m][j]
+	}
+	DistSDm[m] = dm/Nsyn
+}
+print "      Synapsis shuffling - dSm[0] = ",DistSDm[0], " - dSm[1] = ",DistSDm[1] 
+print "                   Frequency (Hz) = ",1000/ns.interval, " - ISI (ms) = ",ns.interval
+print "                               ws = ",ws, " - wi = ",wi, " - delay = ",del
+}
+
+
+proc runMain() {
+
+    CreateShuffleSyn()
+	
+    Corr_me   = 0.0
+    CS_me      = 0.0
+    CS2_me     = 0.0
+
+	ic  = 0
+	cc  = 0
+
+	for k = 0, N-1 {
+
+		for j=0,Nsyn-1 {
+	    	ncD[k][j].weight = ws
+		}
+		for m = 0, N-1 {
+      		nt[k][m].weight=wi
+		}
+		apc[k].n      = 0
+		f[k]          = 0.0
+		nspkm[k]      = 0
+ 	}
+
+    sprint(fphin,"Synchro_Phi_wi%g_dl%g.out",wi,del)
+	fphi = new File(fphin)
+	fphi.wopen()
+	fphi.printf("# Ne,Nsyn,ws,wi,nspk[0],i_spk[0],tspkprec[0],tspknext[0],phi[0],    nspk[1],i_spk[1],tspkprec[1],tspknext[1],phi[1],    t, s_med, cs_med \n")
+
+    sprint(fvn,"Synchro_V_wi%g_dl%g.out",wi,del)
+	fv = new File(fvn)
+	fv.wopen()
+	fv.printf("# t    NC[0].soma.v, NC[1].soma.v  NC[1].apic[%d].v \n",indAD)
+
+	if ( Ne == 1 ) {
+		fv.printf("# Nsyn %d  - d0 %g  - d1 %g  - ws %g  - wi %g  - dli %g \n", Nsyn,DistSDm[0],DistSDm[1],ws,wi,del)
+		fc.printf("# Nsyn %d  - d0 %g  - d1 %g  - ws %g  - wi %g  - dli %g \n", Nsyn,DistSDm[0],DistSDm[1],ws,wi,del)
+    }
+    print "kakbNeNsy N0 N1 - ws  wi  f1  f2 Crm Sm dPhi0 dPhi1 CSm"
+
+   	for k = 0, N-1 {
+		dSDm[k] = 0
+	}
+    DPhim  = 0.0
+    DPhim2 = 0.0
+
+	for ke = 0, Nexp -1 {
+
+        Ne = ke + 1 
+    	Nwindowscorr=0
+	    istep = 0
+    	sum1  = 0.0
+	    sum2  = 0.0
+    	sum12 = 0.0
+		
+		if( ke > 0 ) {
+	    	for k = 0, N-1 {
+				DistSDm[k] = 0
+			}
+			CreateShuffleSyn()
+		}
+    	
+		run()
+		
+		for k = 0, N-1 {
+            dSDm[k] = dSDm[k] + DistSDm[k]
+			if ( apc[k].time > 0 ) {f[k] = f[k] + nspk[k]/apc[k].time*1000}
+			nspkm[k] = nspkm[k] + nspk[k]
+			NspikesTotm = NspikesTotm + nspk[k]
+		}
+		
+		d.beginline()
+        tmax = tspk[0][nspk[0]]
+        if ( tmax > tspk[1][nspk[1]] ) { tmax = tspk[1][nspk[1]] }
+		ttt = 0
+		ddt = 0.1
+		Ntsteps = 0
+		DeltaPhim = 0
+		
+    	for l = 0, N-1 {
+			i_spk[l] = 0
+			tspknext[l]  = tspk[l][i_spk[l]+1]
+		}
+		
+   		phi[0]=mcell_ran4(&xseed)*6.283184   
+   		phi[1]=mcell_ran4(&xseed)*6.283184   
+		cs_med = 0.0
+
+		while ( ttt < tmax ) {
+
+	   		phi[0]=mcell_ran4(&xseed)*6.283184
+   			phi[1]=mcell_ran4(&xseed)*6.283184
+
+			if (nspk[0] >1 && nspk[1] >1) {
+	    	for l = 0, N-1 {
+
+		        if ( ttt >= tspk[l][i_spk[l]+1] ) {
+		            i_spk[l] = i_spk[l] + 1
+		            tspkprec[l] = tspk[l][i_spk[l]] 
+		            tspknext[l] = tspk[l][i_spk[l]+1] 
+	    		}
+
+		  	    if ( (tspkprec[l] != tspknext[l]) ) {
+		    		phi[l]=0    // rnd:22/05/2023
+		  	        if  (ttt < tspknext[l]) {
+			  	        phi[l] = 2.*3.141592 * (ttt - tspkprec[l]) / (tspknext[l] - tspkprec[l])
+					}
+    			}
+    		}
+			}
+		
+    		// in each step, updates the phase difference
+    		DeltaPhim = DeltaPhim + (phi[1]-phi[0])*ddt
+			cs_med =  cs_med + cos( (phi[1]-phi[0]) ) * ddt
+		    ttt = ttt + ddt
+		    Ntsteps = Ntsteps + 1
+//     	    print "tsp[0]=", tspkprec[0], " tsn[0]=", tspknext[0]," phi[0]=", phi[0],"tsp[1]=", tspkprec[1], " tsn[1]=", tspknext[1]," phi[1]=", phi[1], "s(t)=", s_med/ttt
+            
+            if ( Ne == 1 ) {  
+	            if ( Ntsteps % 10 == 0 ){
+    	    		fphi.printf("%d %d %g %g %d %d %g %g %g    %d %d %g %g %g   %g %g   %g %g   %g %g %g\n",Ne,Nsyn,ws,wi,nspk[0],i_spk[0],tspkprec[0],tspknext[0],phi[0],nspk[1],i_spk[1],tspkprec[1],tspknext[1],phi[1], ttt,s_med/ttt,dSDm[0],dSDm[1],DeltaPhim/ttt,cs_med/ttt,Corr_me)
+				}
+				d.line(ttt,s_med/ttt)
+    		    d.flush
+            }
+
+		}
+		
+//	   		print tmax, nspk[0], nspk[1]
+        if (tmax == 0) {
+            ttt=1
+	        cs_med = cos( (phi[1]-phi[0]) )
+	        DeltaPhim = (phi[1]-phi[0])
+        }
+		CS_me   = CS_me + cs_med/ttt
+		DPhim   = DPhim  + DeltaPhim/ttt
+		CS2_me    = CS2_me + cs_med/ttt * cs_med/ttt
+		DPhim2    = DPhim2  + DeltaPhim/ttt * DeltaPhim/ttt
+
+        varS  = abs(S2_me/Ne - S_me/Ne * S_me/Ne)
+        varCS = abs(CS2_me/Ne - CS_me/Ne * CS_me/Ne)
+        varPH = abs(DPhim2/Ne - DPhim/Ne * DPhim/Ne)
+		
+		S_sig     = sqrt(varS) 
+		CS_sig    = sqrt(varCS)
+		DPhim_sig = sqrt(varPH)
+
+        fphi.close
+        
+    	print Ne,Nsyn,nspkm[0]/Ne,nspkm[1]/Ne,ws,wi,f[0]/Ne,f[1]/Ne,Corr_me/Ne,S_me/Ne,dSDm[0]/Ne,dSDm[1]/Ne,DPhim/Ne,CS_me/Ne,S_sig,CS_sig,DPhim_sig,del
+    	print "           Sm = ", S_me/Ne,"  Cm = ", CS_me/Ne,"  C(0) = ", Corr_me/Ne
+
+         
+	    NspikesTot= 0
+    	for l = 0, N-1 {
+ 
+    		nspk[l]=0
+	    	tspkprec[l] =0
+    		tspknext[l] =0
+    		l2=1
+	    	while ( tspk[l][l2] > 0) {
+			    tspk[l][l2] = 0
+			    l2 = l2 + 1
+			}
+			apc[l].n=0 
+    	}
+
+    	ic = 0
+
+	    sprint(foutn,"Synchro_wi%g_dl%g.out",wi,del)
+		fout = new File(foutn)
+		fout.wopen()
+		fout.printf("#  ds1  NspkT  nspk[0] nspk[1]  Nsyn  ws   wi   f1m   f2m   corr_vv   S_me   dS0  dS1  Dphinm   CS_me    S_sig  CS_sig   DPhim_sig  Nexp del\n")
+		fout.printf("%g %g %g %g %d %g %g %g %g %g %g %g %g %g %g %g %g %g %d %g \n", ds1,NspikesTotm/Ne,nspkm[0]/Ne,nspkm[1]/Ne,Nsyn,ws,wi,f[0]/Ne,f[1]/Ne,Corr_me/Ne,S_me/Ne,dSDm[0]/Ne,dSDm[1]/Ne,DPhim/Ne,CS_me/Ne,S_sig,CS_sig,DPhim_sig,Ne,del)
+		fout.close()
+
+        ccc=0
+	    if ( Nwindowscorr > 0 ) ccc = corr_med  / Nwindowscorr
+	    fc.printf("%g %g %g %g \n",s_med/ttt,cs_med/ttt,ccc,DeltaPhim/ttt)
+	    
+		if ( Ne == 1 ) {
+			fv.printf("# %g %g %g %g %d %g %g %g %g %g %g %g %g %g %g %g %g %g %d %g \n", ds1,NspikesTotm/Ne,nspkm[0]/Ne,nspkm[1]/Ne,Nsyn,ws,wi,f[0]/Ne,f[1]/Ne,Corr_me/Ne,S_me/Ne,dSDm[0]/Ne,dSDm[1]/Ne,DPhim/Ne,CS_me/Ne,S_sig,CS_sig,DPhim_sig,Ne,del)
+	    	fv.close()
+	   	}
+	   	
+	}
+
+   	fc.close()
+
+	xval = ds1
+   	c2.mark(xval,Corr_me/Nexp,"o",8,1,1.5)
+	c2.label(0.49,0.0,llab)
+   	c2.flush
+
+   	d2.mark(xval,S_me/Nexp,"o",8,1,1.5)
+	d2.label(0.49,0.0,llab)
+   	d2.flush
+
+
+   	e2.mark(xval,f[0]/Nexp,"o",8,1,1.5)
+   	e2.mark(xval,f[1]/Nexp,"t",8,1,1.5)
+	e2.label(0.49,0.0,llab)
+   	e2.flush
+
+	fout.close()
+	fspk.close()
+
+}   // fine runMain
+
+load_file("Ses_t1000.ses")
+
+runMain()
