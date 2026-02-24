@@ -1,5 +1,5 @@
 load_file("nrngui.hoc")
-load_file("cell.hoc")
+load_file("cellM1.hoc")
 cvode_active(1) 
 
 objref NeuroCell[2], stim[2]

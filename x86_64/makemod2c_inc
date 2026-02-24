@@ -1,0 +1,96 @@
+cacumm.cpp: ../cacumm.mod $(NOCMODL)
+	@printf " -> $(C_GREEN)NMODL$(C_RESET) $<\\n"
+	(cd "..";  MODLUNIT=$(NRNUNITS) $(NOCMODL) "cacumm.mod"  -o "/home/mohamed/myprojects/migliore2024/phasecoding/x86_64" )
+
+./cacumm.o: cacumm.cpp
+	@printf " -> $(C_GREEN)Compiling$(C_RESET) /home/mohamed/myprojects/migliore2024/phasecoding/x86_64/$<\\n"
+	$(CXXCOMPILE) -I".." $(INCLUDES) -fPIC -c "/home/mohamed/myprojects/migliore2024/phasecoding/x86_64/$<" -o $@
+
+cagk.cpp: ../cagk.mod $(NOCMODL)
+	@printf " -> $(C_GREEN)NMODL$(C_RESET) $<\\n"
+	(cd "..";  MODLUNIT=$(NRNUNITS) $(NOCMODL) "cagk.mod"  -o "/home/mohamed/myprojects/migliore2024/phasecoding/x86_64" )
+
+./cagk.o: cagk.cpp
+	@printf " -> $(C_GREEN)Compiling$(C_RESET) /home/mohamed/myprojects/migliore2024/phasecoding/x86_64/$<\\n"
+	$(CXXCOMPILE) -I".." $(INCLUDES) -fPIC -c "/home/mohamed/myprojects/migliore2024/phasecoding/x86_64/$<" -o $@
+
+cal2.cpp: ../cal2.mod $(NOCMODL)
+	@printf " -> $(C_GREEN)NMODL$(C_RESET) $<\\n"
+	(cd "..";  MODLUNIT=$(NRNUNITS) $(NOCMODL) "cal2.mod"  -o "/home/mohamed/myprojects/migliore2024/phasecoding/x86_64" )
+
+./cal2.o: cal2.cpp
+	@printf " -> $(C_GREEN)Compiling$(C_RESET) /home/mohamed/myprojects/migliore2024/phasecoding/x86_64/$<\\n"
+	$(CXXCOMPILE) -I".." $(INCLUDES) -fPIC -c "/home/mohamed/myprojects/migliore2024/phasecoding/x86_64/$<" -o $@
+
+can2.cpp: ../can2.mod $(NOCMODL)
+	@printf " -> $(C_GREEN)NMODL$(C_RESET) $<\\n"
+	(cd "..";  MODLUNIT=$(NRNUNITS) $(NOCMODL) "can2.mod"  -o "/home/mohamed/myprojects/migliore2024/phasecoding/x86_64" )
+
+./can2.o: can2.cpp
+	@printf " -> $(C_GREEN)Compiling$(C_RESET) /home/mohamed/myprojects/migliore2024/phasecoding/x86_64/$<\\n"
+	$(CXXCOMPILE) -I".." $(INCLUDES) -fPIC -c "/home/mohamed/myprojects/migliore2024/phasecoding/x86_64/$<" -o $@
+
+cat.cpp: ../cat.mod $(NOCMODL)
+	@printf " -> $(C_GREEN)NMODL$(C_RESET) $<\\n"
+	(cd "..";  MODLUNIT=$(NRNUNITS) $(NOCMODL) "cat.mod"  -o "/home/mohamed/myprojects/migliore2024/phasecoding/x86_64" )
+
+./cat.o: cat.cpp
+	@printf " -> $(C_GREEN)Compiling$(C_RESET) /home/mohamed/myprojects/migliore2024/phasecoding/x86_64/$<\\n"
+	$(CXXCOMPILE) -I".." $(INCLUDES) -fPIC -c "/home/mohamed/myprojects/migliore2024/phasecoding/x86_64/$<" -o $@
+
+h.cpp: ../h.mod $(NOCMODL)
+	@printf " -> $(C_GREEN)NMODL$(C_RESET) $<\\n"
+	(cd "..";  MODLUNIT=$(NRNUNITS) $(NOCMODL) "h.mod"  -o "/home/mohamed/myprojects/migliore2024/phasecoding/x86_64" )
+
+./h.o: h.cpp
+	@printf " -> $(C_GREEN)Compiling$(C_RESET) /home/mohamed/myprojects/migliore2024/phasecoding/x86_64/$<\\n"
+	$(CXXCOMPILE) -I".." $(INCLUDES) -fPIC -c "/home/mohamed/myprojects/migliore2024/phasecoding/x86_64/$<" -o $@
+
+kadist.cpp: ../kadist.mod $(NOCMODL)
+	@printf " -> $(C_GREEN)NMODL$(C_RESET) $<\\n"
+	(cd "..";  MODLUNIT=$(NRNUNITS) $(NOCMODL) "kadist.mod"  -o "/home/mohamed/myprojects/migliore2024/phasecoding/x86_64" )
+
+./kadist.o: kadist.cpp
+	@printf " -> $(C_GREEN)Compiling$(C_RESET) /home/mohamed/myprojects/migliore2024/phasecoding/x86_64/$<\\n"
+	$(CXXCOMPILE) -I".." $(INCLUDES) -fPIC -c "/home/mohamed/myprojects/migliore2024/phasecoding/x86_64/$<" -o $@
+
+kaprox.cpp: ../kaprox.mod $(NOCMODL)
+	@printf " -> $(C_GREEN)NMODL$(C_RESET) $<\\n"
+	(cd "..";  MODLUNIT=$(NRNUNITS) $(NOCMODL) "kaprox.mod"  -o "/home/mohamed/myprojects/migliore2024/phasecoding/x86_64" )
+
+./kaprox.o: kaprox.cpp
+	@printf " -> $(C_GREEN)Compiling$(C_RESET) /home/mohamed/myprojects/migliore2024/phasecoding/x86_64/$<\\n"
+	$(CXXCOMPILE) -I".." $(INCLUDES) -fPIC -c "/home/mohamed/myprojects/migliore2024/phasecoding/x86_64/$<" -o $@
+
+kca.cpp: ../kca.mod $(NOCMODL)
+	@printf " -> $(C_GREEN)NMODL$(C_RESET) $<\\n"
+	(cd "..";  MODLUNIT=$(NRNUNITS) $(NOCMODL) "kca.mod"  -o "/home/mohamed/myprojects/migliore2024/phasecoding/x86_64" )
+
+./kca.o: kca.cpp
+	@printf " -> $(C_GREEN)Compiling$(C_RESET) /home/mohamed/myprojects/migliore2024/phasecoding/x86_64/$<\\n"
+	$(CXXCOMPILE) -I".." $(INCLUDES) -fPIC -c "/home/mohamed/myprojects/migliore2024/phasecoding/x86_64/$<" -o $@
+
+kdrca1.cpp: ../kdrca1.mod $(NOCMODL)
+	@printf " -> $(C_GREEN)NMODL$(C_RESET) $<\\n"
+	(cd "..";  MODLUNIT=$(NRNUNITS) $(NOCMODL) "kdrca1.mod"  -o "/home/mohamed/myprojects/migliore2024/phasecoding/x86_64" )
+
+./kdrca1.o: kdrca1.cpp
+	@printf " -> $(C_GREEN)Compiling$(C_RESET) /home/mohamed/myprojects/migliore2024/phasecoding/x86_64/$<\\n"
+	$(CXXCOMPILE) -I".." $(INCLUDES) -fPIC -c "/home/mohamed/myprojects/migliore2024/phasecoding/x86_64/$<" -o $@
+
+kmb.cpp: ../kmb.mod $(NOCMODL)
+	@printf " -> $(C_GREEN)NMODL$(C_RESET) $<\\n"
+	(cd "..";  MODLUNIT=$(NRNUNITS) $(NOCMODL) "kmb.mod"  -o "/home/mohamed/myprojects/migliore2024/phasecoding/x86_64" )
+
+./kmb.o: kmb.cpp
+	@printf " -> $(C_GREEN)Compiling$(C_RESET) /home/mohamed/myprojects/migliore2024/phasecoding/x86_64/$<\\n"
+	$(CXXCOMPILE) -I".." $(INCLUDES) -fPIC -c "/home/mohamed/myprojects/migliore2024/phasecoding/x86_64/$<" -o $@
+
+naxn.cpp: ../naxn.mod $(NOCMODL)
+	@printf " -> $(C_GREEN)NMODL$(C_RESET) $<\\n"
+	(cd "..";  MODLUNIT=$(NRNUNITS) $(NOCMODL) "naxn.mod"  -o "/home/mohamed/myprojects/migliore2024/phasecoding/x86_64" )
+
+./naxn.o: naxn.cpp
+	@printf " -> $(C_GREEN)Compiling$(C_RESET) /home/mohamed/myprojects/migliore2024/phasecoding/x86_64/$<\\n"
+	$(CXXCOMPILE) -I".." $(INCLUDES) -fPIC -c "/home/mohamed/myprojects/migliore2024/phasecoding/x86_64/$<" -o $@
+
