@@ -836,6 +836,7 @@ class CA1_PC_cAC_sig:
             #plt.figure()
             axes[0].plot(t_arr, v_apic_arr)
             axes[0].set_xlabel("Time (ms)")
+            axes[0].set_xlim(left=550) #start recording from 550 ms because no activity before that
             axes[0].set_ylabel("Membrane Potential (mV)")
             axes[0].set_title(f"{sec_name} Membrane Potential After NetStim")
             #plt.show()
@@ -843,6 +844,7 @@ class CA1_PC_cAC_sig:
             # Record from soma
             axes[1].plot(t_arr, v_soma_arr)
             axes[1].set_xlabel("Time (ms)")
+            axes[1].set_xlim(left=550) #start recording from 550 ms because no activity before that
             axes[1].set_ylabel("Membrane Potential (mV)")
             axes[1].set_title(f"Soma Membrane Potential After NetStim ({sec_name})")
             #plt.show()
@@ -918,18 +920,11 @@ class CA1_PC_cAC_sig:
         plt.figure()
         plt.plot(t_apic_array, v_soma_array)
         plt.xlabel("Time (ms)")
+        plt.xlim(left=550) #start recording from 550 ms because no activity before that
         plt.ylabel("Membrane Potential (mV)")
         plt.title("Soma Membrane Potential After NetStim")
         #plt.show()
 
-        # Record from soma
-        # axes[1].plot(t_apic_array, v_soma_array)
-        # axes[1].set_xlabel("Time (ms)")
-        # axes[1].set_ylabel("Membrane Potential (mV)")
-        # axes[1].set_title("Soma Membrane Potential After NetStim")
-        # #plt.show()
-
-        # Save results
         # Save results
         folder_name_results = 'Results'
         subfolder_name_results = f'Soma_Voltage_After_NetStim_Ran_On_{timestamp}'
