@@ -830,8 +830,31 @@ class CA1_PC_cAC_sig:
             # --- DATA PROCESSING ---
             t_arr, v_apic_arr, v_soma_arr = np.array(t), np.array(v_apical), np.array(v_soma)
 
+            # --- DATA ANALYSIS ---
+            # Max membrane potential in apical dendrite
+            max_v_apic = np.max(v_apic_arr)
+            # min membrane potential in apical dendrite
+            min_v_apic = np.min(v_apic_arr)
+            # avg membrane potential in apical dendrite
+            avg_v_apic = np.mean(v_apic_arr)
+            # Max membrane potential in soma
+            max_v_soma = np.max(v_soma_arr)
+            # min membrane potential in soma
+            min_v_soma = np.min(v_soma_arr)
+            # avg membrane potential in soma
+            avg_v_soma = np.mean(v_soma_arr)
+            # Slope apic dend
+            dv_dt_apic = np.gradient(v_apic_arr, t_arr)
+            max_dv_dt_apic = np.max(dv_dt_apic)
+            min_dv_dt_apic = np.min(dv_dt_apic)
+            avg_dv_dt_apic = np.mean(dv_dt_apic)
+            # Slope soma
+            dv_dt_soma = np.gradient(v_soma_arr, t_arr)
+            max_dv_dt_soma = np.max(dv_dt_soma)
+            min_dv_dt_soma = np.min(dv_dt_soma)
+            avg_dv_dt_soma = np.mean(dv_dt_soma)
+            
             # --- PLOTTING & SAVING ---
-            ## Recording from Apical dendrite
             fig, axes = plt.subplots(2, 1, figsize=(15, 10))
             #plt.figure()
             axes[0].plot(t_arr, v_apic_arr)
@@ -866,6 +889,12 @@ class CA1_PC_cAC_sig:
                     csv.writer(f).writerows(zip(t_arr, v_apic_arr))
                 with open(os.path.join(output_folder_path_apic, f'Soma_Voltage_After_NetStim_{sec_name}_Ran_On_{timestamp}.csv'), "a") as f:
                     csv.writer(f).writerows(zip(t_arr, v_soma_arr))
+                with open(os.path.join(output_folder_path_apic, f'{sec_name}_data_analysis_Ran_On_{timestamp}.csv'), "a") as f:
+                     writer = csv.writer(f)
+                     # Write column headers
+                     writer.writerow(['Max V_apic', 'Min V_apic', 'Avg V_apic', 'Max V_soma', 'Min V_soma', 'Avg V_soma', 'Max dv/dt_apic', 'Min dv/dt_apic', 'Avg dv/dt_apic', 'Max dv/dt_soma', 'Min dv/dt_soma', 'Avg dv/dt_soma'])
+                     # Write the data
+                     writer.writerow([max_v_apic, min_v_apic, avg_v_apic, max_v_soma, min_v_soma, avg_v_soma, max_dv_dt_apic, min_dv_dt_apic, avg_dv_dt_apic, max_dv_dt_soma, min_dv_dt_soma, avg_dv_dt_soma])
             except OSError as e:
                 print(f"Error saving Figure or one of the two CSV files: {e}")
 
