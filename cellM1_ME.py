@@ -892,7 +892,7 @@ class CA1_PC_cAC_sig:
                 with open(os.path.join(output_folder_path_apic, f'{sec_name}_data_analysis_Ran_On_{timestamp}.csv'), "a") as f:
                      writer = csv.writer(f)
                      # Write column headers
-                     writer.writerow(['Max V_apic', 'Min V_apic', 'Avg V_apic', 'Max V_soma', 'Min V_soma', 'Avg V_soma', 'Max dv/dt_apic', 'Min dv/dt_apic', 'Avg dv/dt_apic', 'Max dv/dt_soma', 'Min dv/dt_soma', 'Avg dv/dt_soma'])
+                     writer.writerow(['Max V_apic (mV)', 'Min V_apic (mV)', 'Avg V_apic (mV)', 'Max V_soma (mV)', 'Min V_soma (mV)', 'Avg V_soma (mV)', 'Max dv/dt_apic (mV/ms)', 'Min dv/dt_apic (mV/ms)', 'Avg dv/dt_apic (mV/ms)', 'Max dv/dt_soma (mV/ms)', 'Min dv/dt_soma (mV/ms)', 'Avg dv/dt_soma (mV/ms)'])
                      # Write the data
                      writer.writerow([max_v_apic, min_v_apic, avg_v_apic, max_v_soma, min_v_soma, avg_v_soma, max_dv_dt_apic, min_dv_dt_apic, avg_dv_dt_apic, max_dv_dt_soma, min_dv_dt_soma, avg_dv_dt_soma])
             except OSError as e:
