@@ -894,7 +894,7 @@ class CA1_PC_cAC_sig:
             #plt.show()
 
             if target_sec.ghdbar_hd > 0:
-                density_factor = target_sec.ghdbar_hd/target_sec.ghdbar_hd
+                density_factor = target_sec.ghdbar_hd/.0001
             else:
                 density_factor = 0
             # Save results
