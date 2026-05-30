@@ -874,7 +874,7 @@ class CA1_PC_cAC_sig:
 
             # Save results
             folder_name_results = 'Results'
-            subfolder_name_results = f'{sec_name}_Voltage_After_NetStim_Ran_On_{timestamp}'
+            subfolder_name_results = f'{sec_name}_{target_sec.ghdbar_hd/target_sec.dendbar_hd:.2f}HCNChDensity_Voltage_After_NetStim_Ran_On_{timestamp}'
             output_folder_path_apic = os.path.join(self.script_dir, folder_name_results, subfolder_name_results)
 
             # Create the folder if it doesn't already exist
@@ -884,12 +884,12 @@ class CA1_PC_cAC_sig:
             except OSError as e:
                 print(f"Error creating folder: {e}")
             try:
-                plt.savefig(os.path.join(output_folder_path_apic, f'{sec_name}_Voltage_After_NetStim_Ran_On_{timestamp}.png'), dpi=300)
-                with open(os.path.join(output_folder_path_apic, f'{sec_name}_Voltage_After_NetStim_Ran_On_{timestamp}.csv'), "a") as f:
+                plt.savefig(os.path.join(output_folder_path_apic, f'{sec_name}_{target_sec.ghdbar_hd/target_sec.dendbar_hd:.2f}HCNChDensity_Voltage_After_NetStim_Ran_On_{timestamp}.png'), dpi=300)
+                with open(os.path.join(output_folder_path_apic, f'{sec_name}_{target_sec.ghdbar_hd/target_sec.dendbar_hd:.2f}HCNChDensity_Voltage_After_NetStim_Ran_On_{timestamp}.csv'), "a") as f:
                     csv.writer(f).writerows(zip(t_arr, v_apic_arr))
-                with open(os.path.join(output_folder_path_apic, f'Soma_Voltage_After_NetStim_{sec_name}_Ran_On_{timestamp}.csv'), "a") as f:
+                with open(os.path.join(output_folder_path_apic, f'Soma_Voltage_After_NetStim_{sec_name}_{target_sec.ghdbar_hd/target_sec.dendbar_hd:.2f}HCNChDensity_Ran_On_{timestamp}.csv'), "a") as f:
                     csv.writer(f).writerows(zip(t_arr, v_soma_arr))
-                with open(os.path.join(output_folder_path_apic, f'{sec_name}_data_analysis_Ran_On_{timestamp}.csv'), "a") as f:
+                with open(os.path.join(output_folder_path_apic, f'{sec_name}_{target_sec.ghdbar_hd/target_sec.dendbar_hd:.2f}HCNChDensity_Data_Analysis_Ran_On_{timestamp}.csv'), "a") as f:
                      writer = csv.writer(f)
                      # Write column headers
                      writer.writerow(['Max V_apic (mV)', 'Min V_apic (mV)', 'Avg V_apic (mV)', 'Max V_soma (mV)', 'Min V_soma (mV)', 'Avg V_soma (mV)', 'Max dv/dt_apic (mV/ms)', 'Min dv/dt_apic (mV/ms)', 'Avg dv/dt_apic (mV/ms)', 'Max dv/dt_soma (mV/ms)', 'Min dv/dt_soma (mV/ms)', 'Avg dv/dt_soma (mV/ms)'])
