@@ -833,26 +833,47 @@ class CA1_PC_cAC_sig:
             # --- DATA ANALYSIS ---
             # Max membrane potential in apical dendrite
             max_v_apic = np.max(v_apic_arr)
+            max_v_apic_time = t_arr[np.argmax(v_apic_arr)]
             # min membrane potential in apical dendrite
             min_v_apic = np.min(v_apic_arr)
+            min_v_apic_time = t_arr[np.argmin(v_apic_arr)]
             # avg membrane potential in apical dendrite
             avg_v_apic = np.mean(v_apic_arr)
             # Max membrane potential in soma
             max_v_soma = np.max(v_soma_arr)
+            max_v_soma_time = t_arr[np.argmax(v_soma_arr)]
             # min membrane potential in soma
             min_v_soma = np.min(v_soma_arr)
+            min_v_soma_time = t_arr[np.argmin(v_soma_arr)]
             # avg membrane potential in soma
             avg_v_soma = np.mean(v_soma_arr)
-            # Slope apic dend
-            dv_dt_apic = np.gradient(v_apic_arr, t_arr)
-            max_dv_dt_apic = np.max(dv_dt_apic)
-            min_dv_dt_apic = np.min(dv_dt_apic)
-            avg_dv_dt_apic = np.mean(dv_dt_apic)
+
+            # Define time range
+            start_time = 600.5
+            end_time = 601.5
+
+            # Create a boolean mask for the specific range
+            time_mask = (t_arr >= start_time) & (t_arr<= end_time)
+
+            # Slice x and y arrays using mask
+            time_slice = t_arr[time_mask]
+            v_apic_slice = v_apic_arr[time_mask]
+
+            # get gradient
+            dv_dt_apic_early_range = np.gradient(v_apic_slice, time_slice)
+            dv_dt_apic_all = np.gradient(v_apic_arr, t_arr)
+            max_dv_dt_apic_all = np.max(dv_dt_apic_all)
+            min_dv_dt_apic_all = np.min(dv_dt_apic_all)
+            avg_dv_dt_apic_all = np.mean(dv_dt_apic_all)
+            
             # Slope soma
-            dv_dt_soma = np.gradient(v_soma_arr, t_arr)
-            max_dv_dt_soma = np.max(dv_dt_soma)
-            min_dv_dt_soma = np.min(dv_dt_soma)
-            avg_dv_dt_soma = np.mean(dv_dt_soma)
+            time_slice = t_arr[time_mask]
+            v_soma_slice = v_soma_arr[time_mask]
+            dv_dt_soma_early_range = np.gradient(v_soma_slice, time_slice)
+            dv_dt_soma_all = np.gradient(v_soma_arr, t_arr)
+            max_dv_dt_soma_all = np.max(dv_dt_soma_all)
+            min_dv_dt_soma_all = np.min(dv_dt_soma_all)
+            avg_dv_dt_soma_all = np.mean(dv_dt_soma_all)
             
             # --- PLOTTING & SAVING ---
             fig, axes = plt.subplots(2, 1, figsize=(15, 10))
@@ -892,9 +913,9 @@ class CA1_PC_cAC_sig:
                 with open(os.path.join(output_folder_path_apic, f'{sec_name}_{target_sec.ghdbar_hd/target_sec.dendbar_hd:.2f}HCNChDensity_Data_Analysis_Ran_On_{timestamp}.csv'), "a") as f:
                      writer = csv.writer(f)
                      # Write column headers
-                     writer.writerow(['Max V_apic (mV)', 'Min V_apic (mV)', 'Avg V_apic (mV)', 'Max V_soma (mV)', 'Min V_soma (mV)', 'Avg V_soma (mV)', 'Max dv/dt_apic (mV/ms)', 'Min dv/dt_apic (mV/ms)', 'Avg dv/dt_apic (mV/ms)', 'Max dv/dt_soma (mV/ms)', 'Min dv/dt_soma (mV/ms)', 'Avg dv/dt_soma (mV/ms)'])
+                     writer.writerow(['Max V_apic (mV)', 'Time at Max V_apic (ms)', 'Min V_apic (mV)', 'Time at Min V_apic (ms)', 'Avg V_apic (mV)', 'Max V_soma (mV)', 'Time at Max V_soma (ms)', 'Min V_soma (mV)', 'Time at Min V_soma (ms)', 'Avg V_soma (mV)', 'Early range dv/dt Apic (mV/ms)', 'All range dv/dt Apic (mV/ms)', 'Max dv/dt_apic (mV/ms)', 'Time at Max dv/dt_apic (ms)', 'Min dv/dt_apic (mV/ms)', 'Time at Min dv/dt_apic (ms)', 'Avg dv/dt_apic (mV/ms)', 'Early range dv/dt Soma (mV/ms)', 'All range dv/dt Soma (mV/ms)', 'Max dv/dt_soma (mV/ms)', 'Time at Max dv/dt_soma (ms)', 'Min dv/dt_soma (mV/ms)', 'Time at Min dv/dt_soma (ms)', 'Avg dv/dt_soma (mV/ms)'])
                      # Write the data
-                     writer.writerow([max_v_apic, min_v_apic, avg_v_apic, max_v_soma, min_v_soma, avg_v_soma, max_dv_dt_apic, min_dv_dt_apic, avg_dv_dt_apic, max_dv_dt_soma, min_dv_dt_soma, avg_dv_dt_soma])
+                     writer.writerow([max_v_apic, max_v_apic_time, min_v_apic, min_v_apic_time, avg_v_apic, max_v_soma, max_v_soma_time, min_v_soma, min_v_soma_time, avg_v_soma, dv_dt_apic_early_range, dv_dt_apic_all, max_dv_dt_apic_all, max_dv_dt_apic_all, min_dv_dt_apic_all, min_dv_dt_apic_all, avg_dv_dt_apic_all, dv_dt_soma_early_range, dv_dt_soma_all, max_dv_dt_soma_all, max_dv_dt_soma_all, min_dv_dt_soma_all, min_dv_dt_soma_all, avg_dv_dt_soma_all])
             except OSError as e:
                 print(f"Error saving Figure or one of the two CSV files: {e}")
 
