@@ -830,6 +830,14 @@ class CA1_PC_cAC_sig:
             # --- DATA PROCESSING ---
             t_arr, v_apic_arr, v_soma_arr = np.array(t), np.array(v_apical), np.array(v_soma)
 
+            # --- Detect Change time of Resting Membrane Potential ---
+            # The first [0] accesses the array of matching indices (since np.where returns a tuple for each dimension).
+            # The second [0] selects the first index in that list, which represents the earliest point in time when the deviation occurred.
+            resting_v = -65
+            threshold_v = 0.5
+            change_time_apic = t_arr[np.where(np.abs(v_apic_arr - resting_v) > threshold_v)[0][0]]
+            change_time_soma = t_arr[np.where(np.abs(v_soma_arr - resting_v) > threshold_v)[0][0]]
+            
             # --- DATA ANALYSIS ---
             # Max membrane potential in apical dendrite
             max_v_apic = np.max(v_apic_arr)
@@ -860,7 +868,10 @@ class CA1_PC_cAC_sig:
             v_apic_slice = v_apic_arr[time_mask]
 
             # get gradient
-            dv_dt_apic_early_range = np.gradient(v_apic_slice, time_slice)
+            max_dv_dt_apic_early_range = np.max(np.gradient(v_apic_slice, time_slice))
+            min_dv_dt_apic_early_range = np.min(np.gradient(v_apic_slice, time_slice))
+            avg_dv_dt_apic_early_range = np.mean(np.gradient(v_apic_slice, time_slice))
+            
             dv_dt_apic_all = np.gradient(v_apic_arr, t_arr)
             max_dv_dt_apic_all = np.max(dv_dt_apic_all)
             min_dv_dt_apic_all = np.min(dv_dt_apic_all)
@@ -869,7 +880,10 @@ class CA1_PC_cAC_sig:
             # Slope soma
             time_slice = t_arr[time_mask]
             v_soma_slice = v_soma_arr[time_mask]
-            dv_dt_soma_early_range = np.gradient(v_soma_slice, time_slice)
+            max_dv_dt_soma_early_range = np.max(np.gradient(v_soma_slice, time_slice))
+            min_dv_dt_soma_early_range = np.min(np.gradient(v_soma_slice, time_slice))
+            avg_dv_dt_soma_early_range = np.mean(np.gradient(v_soma_slice, time_slice))
+
             dv_dt_soma_all = np.gradient(v_soma_arr, t_arr)
             max_dv_dt_soma_all = np.max(dv_dt_soma_all)
             min_dv_dt_soma_all = np.min(dv_dt_soma_all)
@@ -878,19 +892,42 @@ class CA1_PC_cAC_sig:
             # --- PLOTTING & SAVING ---
             fig, axes = plt.subplots(2, 1, figsize=(15, 10))
             #plt.figure()
-            axes[0].plot(t_arr, v_apic_arr)
+            # Get the y-values at the change times to position the stars
+            idx_apic = np.abs(t_arr - change_time_apic).argmin()
+            y_val_apic = v_apic_arr[idx_apic]
+            
+            idx_soma = np.abs(t_arr - change_time_soma).argmin()
+            y_val_soma = v_soma_arr[idx_soma]
+
+            axes[0].plot(t_arr, v_apic_arr, label="Membrane Potential")
+            axes[0].plot(change_time_apic, y_val_apic, 'r*', markersize=12, label=f"Earliest Time of RMP change - Apical Dendrite: {change_time_apic:.2f} ms")
             axes[0].set_xlabel("Time (ms)")
             axes[0].set_xlim(left=550) #start recording from 550 ms because no activity before that
             axes[0].set_ylabel("Membrane Potential (mV)")
+            # Set y limits for the plot
+            padding = 1.0 # Adding 1 mV above and below the data
+            min_y_apic = np.min(v_apic_arr)
+            max_y_apic = np.max(v_apic_arr)
+            axes[0].set_ylim(bottom=min_y_apic - padding, top=max_y_apic + padding)
             axes[0].set_title(f"{sec_name} Membrane Potential After NetStim")
+            axes[0].text(change_time_apic, 1.02, f"{change_time_apic:.2f} ms", color='red', ha='center', va='bottom', transform=axes[0].get_xaxis_transform())
+            axes[0].legend(loc="upper right")
             #plt.show()
 
             # Record from soma
-            axes[1].plot(t_arr, v_soma_arr)
+            axes[1].plot(t_arr, v_soma_arr, label="Membrane Potential")
+            axes[1].plot(change_time_soma, y_val_soma, 'r*', markersize=12, label=f"Earliest Time of RMP change - Soma: {change_time_soma:.2f} ms")
             axes[1].set_xlabel("Time (ms)")
             axes[1].set_xlim(left=550) #start recording from 550 ms because no activity before that
             axes[1].set_ylabel("Membrane Potential (mV)")
+            # Set y limits for the plot
+            padding = 1.0 # Adding 1 mV above and below the data
+            min_y_soma = np.min(v_soma_arr)
+            max_y_soma = np.max(v_soma_arr)
+            axes[1].set_ylim(bottom=min_y_soma - padding, top=max_y_soma + padding)
             axes[1].set_title(f"Soma Membrane Potential After NetStim ({sec_name})")
+            axes[1].text(change_time_soma, 1.02, f"{change_time_soma:.2f} ms", color='red', ha='center', va='bottom', transform=axes[1].get_xaxis_transform())
+            axes[1].legend(loc="upper right")
             #plt.show()
 
             if target_sec.ghdbar_hd > 0:
@@ -917,9 +954,9 @@ class CA1_PC_cAC_sig:
                 with open(os.path.join(output_folder_path_apic, f'{sec_name}_{density_factor:.2f}HCNChDensity_Data_Analysis_Ran_On_{timestamp}.csv'), "a") as f:
                      writer = csv.writer(f)
                      # Write column headers
-                     writer.writerow(['Max V_apic (mV)', 'Time at Max V_apic (ms)', 'Min V_apic (mV)', 'Time at Min V_apic (ms)', 'Avg V_apic (mV)', 'Max V_soma (mV)', 'Time at Max V_soma (ms)', 'Min V_soma (mV)', 'Time at Min V_soma (ms)', 'Avg V_soma (mV)', 'Early range dv/dt Apic (mV/ms)', 'All range dv/dt Apic (mV/ms)', 'Max dv/dt_apic (mV/ms)', 'Time at Max dv/dt_apic (ms)', 'Min dv/dt_apic (mV/ms)', 'Time at Min dv/dt_apic (ms)', 'Avg dv/dt_apic (mV/ms)', 'Early range dv/dt Soma (mV/ms)', 'All range dv/dt Soma (mV/ms)', 'Max dv/dt_soma (mV/ms)', 'Time at Max dv/dt_soma (ms)', 'Min dv/dt_soma (mV/ms)', 'Time at Min dv/dt_soma (ms)', 'Avg dv/dt_soma (mV/ms)'])
+                     writer.writerow(['Max V_apic (mV)', 'Time at Max V_apic (ms)', 'Min V_apic (mV)', 'Time at Min V_apic (ms)', 'Avg V_apic (mV)', 'Max V_soma (mV)', 'Time at Max V_soma (ms)', 'Min V_soma (mV)', 'Time at Min V_soma (ms)', 'Avg V_soma (mV)', 'Max Early range dv/dt Apic (mV/ms)', 'Min Early range dv/dt Apic (mV/ms)', 'Avg Early range dv/dt Apic (mV/ms)', 'Max All range dv/dt Apic (mV/ms)', 'Min All range dv/dt Apic (mV/ms)', 'Avg All range dv/dt Apic (mV/ms)', 'Max dv/dt_apic (mV/ms)', 'Time at Max dv/dt_apic (ms)', 'Min dv/dt_apic (mV/ms)', 'Time at Min dv/dt_apic (ms)', 'Avg dv/dt_apic (mV/ms)', 'Max Early range dv/dt Soma (mV/ms)', 'Min Early range dv/dt Soma (mV/ms)', 'Avg Early range dv/dt Soma (mV/ms)', 'Max All range dv/dt Soma (mV/ms)', 'Min All range dv/dt Soma (mV/ms)', 'Avg All range dv/dt Soma (mV/ms)', 'Max dv/dt_soma (mV/ms)', 'Time at Max dv/dt_soma (ms)', 'Min dv/dt_soma (mV/ms)', 'Time at Min dv/dt_soma (ms)', 'Avg dv/dt_soma (mV/ms)'])
                      # Write the data
-                     writer.writerow([max_v_apic, max_v_apic_time, min_v_apic, min_v_apic_time, avg_v_apic, max_v_soma, max_v_soma_time, min_v_soma, min_v_soma_time, avg_v_soma, dv_dt_apic_early_range, dv_dt_apic_all, max_dv_dt_apic_all, max_dv_dt_apic_all, min_dv_dt_apic_all, min_dv_dt_apic_all, avg_dv_dt_apic_all, dv_dt_soma_early_range, dv_dt_soma_all, max_dv_dt_soma_all, max_dv_dt_soma_all, min_dv_dt_soma_all, min_dv_dt_soma_all, avg_dv_dt_soma_all])
+                     writer.writerow([max_v_apic, max_v_apic_time, min_v_apic, min_v_apic_time, avg_v_apic, max_v_soma, max_v_soma_time, min_v_soma, min_v_soma_time, avg_v_soma, max_dv_dt_apic_early_range, min_dv_dt_apic_early_range, avg_dv_dt_apic_early_range, max_dv_dt_apic_all, min_dv_dt_apic_all, avg_dv_dt_apic_all, max_dv_dt_apic_all, max_dv_dt_apic_all, min_dv_dt_apic_all, min_dv_dt_apic_all, avg_dv_dt_apic_all, max_dv_dt_soma_early_range, min_dv_dt_soma_early_range, avg_dv_dt_soma_early_range, max_dv_dt_soma_all, min_dv_dt_soma_all, avg_dv_dt_soma_all, max_dv_dt_soma_all, max_dv_dt_soma_all, min_dv_dt_soma_all, min_dv_dt_soma_all, avg_dv_dt_soma_all])
             except OSError as e:
                 print(f"Error saving Figure or one of the two CSV files: {e}")
 

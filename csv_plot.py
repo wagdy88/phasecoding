@@ -99,12 +99,24 @@ def plot_neuron_results(list_of_folders):
     ax_above.set_xlabel("Time (ms)")
     ax_above.set_xlim(left=550) # start recording from 550 ms because no activity before that
     ax_above.set_ylabel("Membrane Potential (mV)")
+    #ax_above.autoscale(enable=True, axis='y', tight=True) 
+    all_voltages_ax_above = apic_df.iloc[:, 1]
+    ax_above_min_y = np.min(all_voltages_ax_above)
+    ax_above_max_y = np.max(all_voltages_ax_above)
+    padding = 1
+    ax_above.set_ylim(bottom=ax_above_min_y - padding, top=ax_above_max_y + padding)
     ax_above.legend(loc='upper right')
     ax_above.set_title("Apical Plot")
 
     ax_below.set_xlabel("Time (ms)")
     ax_below.set_xlim(left=550) # start recording from 550 ms because no activity before that
     ax_below.set_ylabel("Membrane Potential (mV)")
+    #ax_below.autoscale(enable=True, axis='y', tight=True) 
+    all_voltages_ax_below = soma_df.iloc[:, 1]
+    ax_below_min_y = np.min(all_voltages_ax_below)
+    ax_below_max_y = np.max(all_voltages_ax_below)
+    padding = 1
+    ax_below.set_ylim(bottom=ax_below_min_y - padding, top=ax_below_max_y + padding)
     ax_below.legend(loc='upper right')
     ax_below.set_title("Soma Plot")
 
