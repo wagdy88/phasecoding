@@ -895,7 +895,7 @@ class CA1_PC_cAC_sig:
 
             # Save results
             folder_name_results = 'Results'
-            subfolder_name_results = f'{sec_name}_{target_sec.ghdbar_hd/target_sec.dendbar_hd:.2f}HCNChDensity_Voltage_After_NetStim_Ran_On_{timestamp}'
+            subfolder_name_results = f'{sec_name}_{target_sec.ghdbar_hd/target_sec.ghdbar_hd:.2f}HCNChDensity_Voltage_After_NetStim_Ran_On_{timestamp}'
             output_folder_path_apic = os.path.join(self.script_dir, folder_name_results, subfolder_name_results)
 
             # Create the folder if it doesn't already exist
