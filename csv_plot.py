@@ -80,6 +80,10 @@ def plot_neuron_results(list_of_folders):
     # 5. Create a single shared figure for all pairs
     fig, (ax_above, ax_below) = plt.subplots(2, 1, figsize=(12, 8))
 
+    # Initialize variables to track global mins/maxs for time >= 550 ms
+    above_min, above_max = float('inf'), float('-inf')
+    below_min, below_max = float('inf'), float('-inf')
+    
     # 6. Loop through zipped pairs and plot onto the shared axes
     for idx, ((apic_file, apic_color), (soma_file, soma_color)) in enumerate(zip(apic_files_with_colors, soma_files_with_colors)):
         # Get data from apic file
@@ -89,34 +93,48 @@ def plot_neuron_results(list_of_folders):
         apic_df = pd.read_csv(apic_file['full_path'])
         ax_above.plot(apic_df.iloc[:, 0], apic_df.iloc[:, 1], color=apic_color, label=apic_short_name)
 
+        # Track min/max for apic only for Time >= 550
+        apic_visible = apic_df[apic_df.iloc[:, 0] >= 550]
+        if not apic_visible.empty:
+            above_min = min(above_min, apic_visible.iloc[:, 1].min())
+            above_max = max(above_max, apic_visible.iloc[:, 1].max())
+
         # Get data from soma file
         soma_match = apic_short_label_pattern.search(soma_file['name'])
         soma_short_name = soma_match.group(0)
         soma_df = pd.read_csv(soma_file['full_path'])
         ax_below.plot(soma_df.iloc[:, 0], soma_df.iloc[:, 1], color=soma_color, label=f"Soma_{soma_short_name}")
+        
+        # Track min/max for soma only for Time >= 550
+        soma_visible = soma_df[soma_df.iloc[:, 0] >= 550]
+        if not soma_visible.empty:
+            below_min = min(below_min, soma_visible.iloc[:, 1].min())
+            below_max = max(below_max, soma_visible.iloc[:, 1].max())
 
     # Configure styling, limits, labels, and legends after all datasets are plotted
     ax_above.set_xlabel("Time (ms)")
-    ax_above.set_xlim(left=550) # start recording from 550 ms because no activity before that
+    ax_above.set_xlim(left=550, right=710) # start recording from 550 ms because no activity before that
     ax_above.set_ylabel("Membrane Potential (mV)")
     #ax_above.autoscale(enable=True, axis='y', tight=True) 
     all_voltages_ax_above = apic_df.iloc[:, 1]
-    ax_above_min_y = np.min(all_voltages_ax_above)
-    ax_above_max_y = np.max(all_voltages_ax_above)
-    padding = 1
-    ax_above.set_ylim(bottom=ax_above_min_y - padding, top=ax_above_max_y + padding)
+    # ax_above_min_y = np.min(all_voltages_ax_above)
+    # ax_above_max_y = np.max(all_voltages_ax_above)
+    padding = 0.5
+    # ax_above.set_ylim(bottom=ax_above_min_y - padding, top=ax_above_max_y + padding)
+    ax_above.set_ylim(bottom=above_min - padding, top=above_max + padding)
     ax_above.legend(loc='upper right')
     ax_above.set_title("Apical Plot")
 
     ax_below.set_xlabel("Time (ms)")
-    ax_below.set_xlim(left=550) # start recording from 550 ms because no activity before that
+    ax_below.set_xlim(left=550, right=710) # start recording from 550 ms because no activity before that
     ax_below.set_ylabel("Membrane Potential (mV)")
     #ax_below.autoscale(enable=True, axis='y', tight=True) 
-    all_voltages_ax_below = soma_df.iloc[:, 1]
-    ax_below_min_y = np.min(all_voltages_ax_below)
-    ax_below_max_y = np.max(all_voltages_ax_below)
-    padding = 1
-    ax_below.set_ylim(bottom=ax_below_min_y - padding, top=ax_below_max_y + padding)
+    # all_voltages_ax_below = soma_df.iloc[:, 1]
+    # ax_below_min_y = np.min(all_voltages_ax_below)
+    # ax_below_max_y = np.max(all_voltages_ax_below)
+    # padding = 1
+    # ax_below.set_ylim(bottom=ax_below_min_y - padding, top=ax_below_max_y + padding)
+    ax_below.set_ylim(bottom=below_min - padding, top=below_max + padding)
     ax_below.legend(loc='upper right')
     ax_below.set_title("Soma Plot")
 
