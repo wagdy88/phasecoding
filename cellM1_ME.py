@@ -839,22 +839,28 @@ class CA1_PC_cAC_sig:
             change_time_soma = t_arr[np.where(np.abs(v_soma_arr - resting_v) > threshold_v)[0][0]]
             
             # --- DATA ANALYSIS ---
+            # Filter data for time >= 550 ms
+            mask_550 = t_arr >= 550
+            t_550 = t_arr[mask_550]
+            v_apic_550 = v_apic_arr[mask_550]
+            v_soma_550 = v_soma_arr[mask_550]
+
             # Max membrane potential in apical dendrite
-            max_v_apic = np.max(v_apic_arr)
-            max_v_apic_time = t_arr[np.argmax(v_apic_arr)]
+            max_v_apic = np.max(v_apic_550)
+            max_v_apic_time = t_550[np.argmax(v_apic_550)]
             # min membrane potential in apical dendrite
-            min_v_apic = np.min(v_apic_arr)
-            min_v_apic_time = t_arr[np.argmin(v_apic_arr)]
+            min_v_apic = np.min(v_apic_550)
+            min_v_apic_time = t_550[np.argmin(v_apic_550)]
             # avg membrane potential in apical dendrite
-            avg_v_apic = np.mean(v_apic_arr)
+            avg_v_apic = np.mean(v_apic_550)
             # Max membrane potential in soma
-            max_v_soma = np.max(v_soma_arr)
-            max_v_soma_time = t_arr[np.argmax(v_soma_arr)]
+            max_v_soma = np.max(v_soma_550)
+            max_v_soma_time = t_550[np.argmax(v_soma_550)]
             # min membrane potential in soma
-            min_v_soma = np.min(v_soma_arr)
-            min_v_soma_time = t_arr[np.argmin(v_soma_arr)]
+            min_v_soma = np.min(v_soma_550)
+            min_v_soma_time = t_550[np.argmin(v_soma_550)]
             # avg membrane potential in soma
-            avg_v_soma = np.mean(v_soma_arr)
+            avg_v_soma = np.mean(v_soma_550)
 
             # Define time range
             start_time = 600.5
@@ -906,9 +912,7 @@ class CA1_PC_cAC_sig:
             axes[0].set_ylabel("Membrane Potential (mV)")
             # Set y limits for the plot
             padding = 1.0 # Adding 1 mV above and below the data
-            min_y_apic = np.min(v_apic_arr)
-            max_y_apic = np.max(v_apic_arr)
-            axes[0].set_ylim(bottom=min_y_apic - padding, top=max_y_apic + padding)
+            axes[0].set_ylim(bottom=min_v_apic - padding, top=max_v_apic + padding)
             axes[0].set_title(f"{sec_name} Membrane Potential After NetStim")
             axes[0].text(change_time_apic, 1.02, f"{change_time_apic:.2f} ms", color='red', ha='center', va='bottom', transform=axes[0].get_xaxis_transform())
             axes[0].legend(loc="upper right")
@@ -922,9 +926,7 @@ class CA1_PC_cAC_sig:
             axes[1].set_ylabel("Membrane Potential (mV)")
             # Set y limits for the plot
             padding = 1.0 # Adding 1 mV above and below the data
-            min_y_soma = np.min(v_soma_arr)
-            max_y_soma = np.max(v_soma_arr)
-            axes[1].set_ylim(bottom=min_y_soma - padding, top=max_y_soma + padding)
+            axes[1].set_ylim(bottom=min_v_soma - padding, top=max_v_soma + padding)
             axes[1].set_title(f"Soma Membrane Potential After NetStim ({sec_name})")
             axes[1].text(change_time_soma, 1.02, f"{change_time_soma:.2f} ms", color='red', ha='center', va='bottom', transform=axes[1].get_xaxis_transform())
             axes[1].legend(loc="upper right")
