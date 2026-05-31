@@ -122,9 +122,14 @@ def plot_neuron_results(list_of_folders):
     padding = 0.5
     # ax_above.set_ylim(bottom=ax_above_min_y - padding, top=ax_above_max_y + padding)
     ax_above.set_ylim(bottom=above_min - padding, top=above_max + padding)
+    # Define the step size (interval) for the numbers on the axis
+    step_size = 0.5  # Put a label/line every 0.5 mV
+    # Create a list of tick locations from bottom to top counting by step_size
+    y_ticks = np.arange(np.floor(above_min), np.ceil(above_max) + step_size, step_size)
+    # Apply the steps to the axis
+    ax_above.set_yticks(y_ticks)
     ax_above.legend(loc='upper right')
     ax_above.set_title("Apical Plot")
-
     ax_below.set_xlabel("Time (ms)")
     ax_below.set_xlim(left=550, right=710) # start recording from 550 ms because no activity before that
     ax_below.set_ylabel("Membrane Potential (mV)")
@@ -135,9 +140,14 @@ def plot_neuron_results(list_of_folders):
     # padding = 1
     # ax_below.set_ylim(bottom=ax_below_min_y - padding, top=ax_below_max_y + padding)
     ax_below.set_ylim(bottom=below_min - padding, top=below_max + padding)
+    # Define the step size (interval) for the numbers on the axis
+    step_size = 0.5  # Put a label/line every 0.5 mV
+    # Create a list of tick locations from bottom to top counting by step_size
+    y_ticks = np.arange(np.floor(below_min), np.ceil(below_max) + step_size, step_size)
+    # Apply the steps to the axis
+    ax_below.set_yticks(y_ticks)
     ax_below.legend(loc='upper right')
     ax_below.set_title("Soma Plot")
-
     plt.tight_layout()
     plt.savefig(os.path.join(output_csv_figs_folder, f'combined_plots_{apic_short_name}_{timestamp}.png'), bbox_inches='tight')
 
