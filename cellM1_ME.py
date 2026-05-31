@@ -913,6 +913,14 @@ class CA1_PC_cAC_sig:
             # Set y limits for the plot
             padding = 1.0 # Adding 1 mV above and below the data
             axes[0].set_ylim(bottom=min_v_apic - padding, top=max_v_apic + padding)
+             # Define the step size (interval) for the numbers on the axis
+            step_size = 0.5  # Put a label/line every 0.5 mV
+
+            # Create a list of tick locations from bottom to top counting by step_size
+            y_ticks = np.arange(np.floor(min_v_apic), np.ceil(max_v_apic) + step_size, step_size)
+
+            # Apply the steps to the axis
+            axes[0].set_yticks(y_ticks)
             axes[0].set_title(f"{sec_name} Membrane Potential After NetStim")
             axes[0].text(change_time_apic, 1.02, f"{change_time_apic:.2f} ms", color='red', ha='center', va='bottom', transform=axes[0].get_xaxis_transform())
             axes[0].legend(loc="upper right")
@@ -927,6 +935,14 @@ class CA1_PC_cAC_sig:
             # Set y limits for the plot
             padding = 1.0 # Adding 1 mV above and below the data
             axes[1].set_ylim(bottom=min_v_soma - padding, top=max_v_soma + padding)
+            # Define the step size (interval) for the numbers on the axis
+            step_size = 0.5  # Put a label/line every 0.5 mV
+
+            # Create a list of tick locations from bottom to top counting by step_size
+            y_ticks = np.arange(np.floor(min_v_soma), np.ceil(max_v_soma) + step_size, step_size)
+
+            # Apply the steps to the axis
+            axes[1].set_yticks(y_ticks)
             axes[1].set_title(f"Soma Membrane Potential After NetStim ({sec_name})")
             axes[1].text(change_time_soma, 1.02, f"{change_time_soma:.2f} ms", color='red', ha='center', va='bottom', transform=axes[1].get_xaxis_transform())
             axes[1].legend(loc="upper right")
