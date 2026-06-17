@@ -1024,19 +1024,91 @@ class CA1_PC_cAC_sig:
         v_soma_array = np.array(v_soma)
         t_apic_array = np.array(t)
 
+        # --- DATA PROCESSING ---
+        t_arr, v_soma_arr = np.array(t), np.array(v_soma)
+
+        # --- Detect Change time of Resting Membrane Potential ---
+        # The first [0] accesses the array of matching indices (since np.where returns a tuple for each dimension).
+        # The second [0] selects the first index in that list, which represents the earliest point in time when the deviation occurred.
+        resting_v = -65
+        threshold_v = 0.5
+        change_time_soma = t_arr[np.where(np.abs(v_soma_arr - resting_v) > threshold_v)[0][0]]
+        
+        # --- DATA ANALYSIS ---
+        # Filter data for time >= 550 ms
+        mask_550 = t_arr >= 550
+        t_550 = t_arr[mask_550]
+        v_soma_550 = v_soma_arr[mask_550]
+
+        # Max membrane potential in soma
+        max_v_soma = np.max(v_soma_550)
+        max_v_soma_time = t_550[np.argmax(v_soma_550)]
+        # min membrane potential in soma
+        min_v_soma = np.min(v_soma_550)
+        min_v_soma_time = t_550[np.argmin(v_soma_550)]
+        # avg membrane potential in soma
+        avg_v_soma = np.mean(v_soma_550)
+
+        # Define time range
+        start_time = 600.5
+        max_v_soma_time = t_550[np.argmax(v_soma_550)]
+        # min membrane potential in soma
+        min_v_soma = np.min(v_soma_550)
+        min_v_soma_time = t_550[np.argmin(v_soma_550)]
+        # avg membrane potential in soma
+        avg_v_soma = np.mean(v_soma_550)
+
+        # Define time range
+        start_time = 600.5
+        end_time = 601.5
+
+        # Create a boolean mask for the specific range
+        time_mask = (t_arr >= start_time) & (t_arr<= end_time)
+
+        # Slice x and y arrays using mask
+        time_slice = t_arr[time_mask]
+        v_soma_slice = v_soma_arr[time_mask]
+
+        # get gradient
+        max_dv_dt_soma_early_range = np.max(np.gradient(v_soma_slice, time_slice))
+        min_dv_dt_soma_early_range = np.min(np.gradient(v_soma_slice, time_slice))
+        avg_dv_dt_soma_early_range = np.mean(np.gradient(v_soma_slice, time_slice))
+            
+        dv_dt_soma_all = np.gradient(v_soma_arr, t_arr)
+        max_dv_dt_soma_all = np.max(dv_dt_soma_all)
+        min_dv_dt_soma_all = np.min(dv_dt_soma_all)
+        avg_dv_dt_soma_all = np.mean(dv_dt_soma_all)
+
         # Plot results
-        ## Recording from Apical dendrite
+        ## Recording from Soma
         plt.figure()
-        plt.plot(t_apic_array, v_soma_array)
+        plt.plot(t_arr, v_soma_arr)
         plt.xlabel("Time (ms)")
         plt.xlim(left=550) #start recording from 550 ms because no activity before that
         plt.ylabel("Membrane Potential (mV)")
-        plt.title("Soma Membrane Potential After NetStim")
+        # Set y limits for the plot
+        padding = 1.0 # Adding 1 mV above and below the data
+        plt.ylim(bottom=min_v_soma - padding, top=max_v_soma + padding)
+        # Define the step size (interval) for the numbers on the axis
+        step_size = 0.5  # Put a label/line every 0.5 mV
+
+        # Create a list of tick locations from bottom to top counting by step_size
+        y_ticks = np.arange(np.floor(min_v_soma), np.ceil(max_v_soma) + step_size, step_size)
+
+        # Apply the steps to the axis
+        plt.set_yticks(y_ticks)
+        plt.set_title(f"Soma Membrane Potential After NetStim")
+        plt.annotate(f"{change_time_soma:.2f} ms", xy=(change_time_soma, 1.02), color='red', ha='center', va='bottom', xycoords='data')
+        plt.legend(loc="upper right")
         #plt.show()
 
+        if self.soma.ghdbar_hd > 0:
+            density_factor = self.soma.ghdbar_hd/.0001
+        else:
+            density_factor = 0
         # Save results
         folder_name_results = 'Results'
-        subfolder_name_results = f'Soma_Voltage_After_NetStim_Ran_On_{timestamp}'
+        subfolder_name_results = f'Soma_VoltageAfterNetStim_{density_factor:.2f}HCNChDensity_Ran_On_{timestamp}'
         output_folder_path_apic = os.path.join(self.script_dir, folder_name_results, subfolder_name_results)
 
         # Create the folder if it doesn't already exist
@@ -1045,13 +1117,16 @@ class CA1_PC_cAC_sig:
             print(f"Folder '{subfolder_name_results}' created successfully at: {output_folder_path_apic}")
         except OSError as e:
             print(f"Error creating folder: {e}")
-
         try:
-            plt.savefig(os.path.join(output_folder_path_apic, f'Soma_Voltage_After_NetStim_Ran_On_{timestamp}.png'), dpi=300)
-
-            with open(os.path.join(output_folder_path_apic, f"Soma_Voltage_After_NetStim_Ran_On_{timestamp}.csv"), "a") as f:
-                csv.writer(f).writerows(zip(t_apic_array, v_soma_array))
-
+            plt.savefig(os.path.join(output_folder_path_apic, f'Soma_VoltageAfterNetStim_{density_factor:.2f}HCNChDensity_Ran_On_{timestamp}.png'), dpi=300)
+            with open(os.path.join(output_folder_path_apic, f'Soma_VoltageAfterNetStim_{density_factor:.2f}HCNChDensity_Ran_On_{timestamp}.csv'), "a") as f:
+                csv.writer(f).writerows(zip(t_arr, v_soma_arr))
+            with open(os.path.join(output_folder_path_apic, f'Soma_VoltageAfterNetStim_{density_factor:.2f}HCNChDensity_Data_Analysis_Ran_On_{timestamp}.csv'), "a") as f:
+                writer = csv.writer(f)
+                # Write column headers
+                writer.writerow(['Max V_soma (mV)', 'Time at Max V_soma (ms)', 'Min V_soma (mV)', 'Time at Min V_soma (ms)', 'Avg V_soma (mV)', 'Max Early range dv/dt Soma (mV/ms)', 'Min Early range dv/dt Soma (mV/ms)', 'Avg Early range dv/dt Soma (mV/ms)', 'Max All range dv/dt Soma (mV/ms)', 'Min All range dv/dt Soma (mV/ms)', 'Avg All range dv/dt Soma (mV/ms)', 'Max dv/dt_soma (mV/ms)', 'Time at Max dv/dt_soma (ms)', 'Min dv/dt_soma (mV/ms)', 'Time at Min dv/dt_soma (ms)', 'Avg dv/dt_soma (mV/ms)'])
+                # Write the data
+                writer.writerow([max_v_soma, max_v_soma_time, min_v_soma, min_v_soma_time, avg_v_soma, max_dv_dt_soma_early_range, min_dv_dt_soma_early_range, avg_dv_dt_soma_early_range, max_dv_dt_soma_all, min_dv_dt_soma_all, avg_dv_dt_soma_all, max_dv_dt_soma_all, max_dv_dt_soma_all, min_dv_dt_soma_all, min_dv_dt_soma_all, avg_dv_dt_soma_all])
         except OSError as e:
             print(f"Error saving Figure or one of the two CSV files: {e}")
 
