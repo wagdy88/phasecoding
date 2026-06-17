@@ -992,7 +992,7 @@ class CA1_PC_cAC_sig:
         delay (float): Synaptic delay (ms)
         threshold (float): Threshold for NetStim events
         """
-        soma_syn = h._Somasynapse_info(self.soma(loc))
+        soma_syn = self._Somasynapse_info(loc)
         tstop = tstop
 
         # Create a NetStim to drive the synapse
@@ -1079,6 +1079,11 @@ class CA1_PC_cAC_sig:
         min_dv_dt_soma_all = np.min(dv_dt_soma_all)
         avg_dv_dt_soma_all = np.mean(dv_dt_soma_all)
 
+        if self.soma.ghdbar_hd > 0:
+            density_factor = self.soma.ghdbar_hd/.0001
+        else:
+            density_factor = 0
+
         # Plot results
         ## Recording from Soma
         plt.figure()
@@ -1096,16 +1101,12 @@ class CA1_PC_cAC_sig:
         y_ticks = np.arange(np.floor(min_v_soma), np.ceil(max_v_soma) + step_size, step_size)
 
         # Apply the steps to the axis
-        plt.set_yticks(y_ticks)
-        plt.set_title(f"Soma Membrane Potential After NetStim")
+        plt.yticks(y_ticks)
+        plt.title(f"Soma Membrane Potential with {density_factor} HCN Channel Density")
         plt.annotate(f"{change_time_soma:.2f} ms", xy=(change_time_soma, 1.02), color='red', ha='center', va='bottom', xycoords='data')
         plt.legend(loc="upper right")
         #plt.show()
 
-        if self.soma.ghdbar_hd > 0:
-            density_factor = self.soma.ghdbar_hd/.0001
-        else:
-            density_factor = 0
         # Save results
         folder_name_results = 'Results'
         subfolder_name_results = f'Soma_VoltageAfterNetStim_{density_factor:.2f}HCNChDensity_Ran_On_{timestamp}'
