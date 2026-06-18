@@ -46,7 +46,7 @@ def plot_neuron_results(list_of_folders):
         if not os.path.exists(current_folder):
             continue
         for current_file in os.listdir(current_folder):
-            if current_file.endswith('.csv') and apic_label_0.search(current_file) or  soma_label.search(current_file) and not current_file.startswith('.~lock.') and not current_file.startswith('~$'):
+            if current_file.endswith('.csv') and (apic_label_0.search(current_file) or  soma_label.search(current_file)) and not current_file.startswith('.~lock.') and not current_file.startswith('~$') and 'Data_Analysis' not in current_file:
                 # Store full path for loading and file name for the legend
                 all_csv_files.append({
                     'full_path': os.path.join(current_folder, current_file),

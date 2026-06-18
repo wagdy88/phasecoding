@@ -45,7 +45,7 @@ def plot_soma_results(list_of_folders):
         if not os.path.exists(current_folder):
             continue
         for current_file in os.listdir(current_folder):
-            if current_file.endswith('.csv') and soma_label_0.search(current_file) or  soma_label_2.search(current_file) and not current_file.startswith('.~lock.') and not current_file.startswith('~$'):
+            if current_file.endswith('.csv') and (soma_label_0.search(current_file) or soma_label_2.search(current_file)) and not current_file.startswith('.~lock.') and not current_file.startswith('~$') and 'Data_Analysis' not in current_file:
                 # Store full path for loading and file name for the legend
                 all_soma_csv_files.append({
                     'full_path': os.path.join(current_folder, current_file),
@@ -71,13 +71,18 @@ def plot_soma_results(list_of_folders):
     below_min, below_max = float('inf'), float('-inf')
     
     # 6. Loop through zipped pairs and plot onto the shared axes
-    for idx, (soma_file, soma_color) in enumerate(zip(soma_files_with_colors, color_library)):
+    for idx, (soma_file, soma_color) in enumerate(soma_files_with_colors):
         # Get data from soma file
-        soma_short_label_pattern = re.compile(r'apic\[\d+\](?:_\d+(?:\.\d+)?HCNChDensity)?')
+        soma_short_label_pattern = re.compile(r'apic\[\d+\](?:_\d+(?:\.\d+)?HCNChDensity)?|VoltageAfterNetStim_\d+(?:\.\d+)?HCNChDensity_Ran_On_[\d_-]+')
         soma_match = soma_short_label_pattern.search(soma_file['name'])
-        soma_short_name = soma_match.group(0)
+        if soma_match:
+            soma_short_name = re.sub(r'apic\[\d+\]', 'Soma', soma_match.group(0))
+        else:
+            soma_short_name = soma_file['name']
+        if not soma_short_name.startswith("Soma"):
+            soma_short_name = f"Soma_{soma_short_name}"
         soma_df = pd.read_csv(soma_file['full_path'])
-        ax_below.plot(soma_df.iloc[:, 0], soma_df.iloc[:, 1], color=soma_color, label=f"Soma_{soma_short_name}")
+        ax_below.plot(soma_df.iloc[:, 0], soma_df.iloc[:, 1], color=soma_color, label=soma_short_name)
         
         # Track min/max for soma only for Time >= 550
         soma_visible = soma_df[soma_df.iloc[:, 0] >= 550]
