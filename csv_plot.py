@@ -87,7 +87,7 @@ def plot_neuron_results(list_of_folders):
     # 6. Loop through zipped pairs and plot onto the shared axes
     for idx, ((apic_file, apic_color), (soma_file, soma_color)) in enumerate(zip(apic_files_with_colors, soma_files_with_colors)):
         # Get data from apic file
-        apic_short_label_pattern = re.compile(r'apic\[\d+\](?:_\d+(?:\.\d+)?HCNChDensity)?')
+        apic_short_label_pattern = re.compile(r'apic\[\d+\](?:_\d+(?:\.\d+)?HCNCh)?')
         apic_match = apic_short_label_pattern.search(apic_file['name'])
         apic_short_name = apic_match.group(0)
         apic_df = pd.read_csv(apic_file['full_path'])

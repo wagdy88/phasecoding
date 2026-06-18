@@ -73,7 +73,7 @@ def plot_soma_results(list_of_folders):
     # 6. Loop through zipped pairs and plot onto the shared axes
     for idx, (soma_file, soma_color) in enumerate(soma_files_with_colors):
         # Get data from soma file
-        soma_short_label_pattern = re.compile(r'apic\[\d+\](?:_\d+(?:\.\d+)?HCNChDensity)?|VoltageAfterNetStim_\d+(?:\.\d+)?HCNChDensity_Ran_On_[\d_-]+')
+        soma_short_label_pattern = re.compile(r'apic\[\d+\](?:_\d+(?:\.\d+)?HCNCh)?|VoltageAfterNetStim_\d+(?:\.\d+)?HCNCh')
         soma_match = soma_short_label_pattern.search(soma_file['name'])
         if soma_match:
             soma_short_name = re.sub(r'apic\[\d+\]', 'Soma', soma_match.group(0))
