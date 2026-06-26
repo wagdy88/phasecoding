@@ -1000,7 +1000,7 @@ class CA1_PC_cAC_sig:
 
             # Clean up the callback after simulation completes to avoid leaks
             if frequency > 0:
-                updater.extra_scatter_gather_remove(0, updated_interval)
+                updater.extra_scatter_gather_remove(updated_interval)
 
     def netstimSyn_soma(self, frequency, interval, start, noise, weight, delay, threshold, tstop, number=1e9, loc=0.5):
         """Inject synaptic current into the soma
@@ -1059,7 +1059,7 @@ class CA1_PC_cAC_sig:
 
         # Clean up the callback after simulation completes to avoid leaks
         if frequency > 0:
-            updater.extra_scatter_gather_remove(0, updated_interval)
+            updater.extra_scatter_gather_remove(updated_interval)
 
         # get results
         # v_apic_array = np.array(v_apical)
