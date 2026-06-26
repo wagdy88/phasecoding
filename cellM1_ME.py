@@ -786,7 +786,7 @@ class CA1_PC_cAC_sig:
         except OSError as e:
             print(f"Error saving Figure or one of the two CSV files: {e}")
 
-    def netstim_all_apical(self, interval, number, start, noise, weight, delay, threshold, tstop, target_aid=None, loc=0.5):
+    def netstim_all_apical(self, frequency, interval, start, noise, weight, delay, threshold, tstop, number=1e9, target_aid=None, loc=0.5):
         """
         Loops through sections and runs a simulation for each.
         """
@@ -812,8 +812,26 @@ class CA1_PC_cAC_sig:
             chosen_syn = syn_list[i]  # Get the corresponding synapse for this section
 
             netstim = h.NetStim()
-            netstim.interval, netstim.number = interval, number
-            netstim.start, netstim.noise = start, noise
+            # Configure NetStim parameters
+            if frequency > 0:
+                # Set the initial interval at t=0
+                netstim.interval = self._sine_netstim(frequency)
+
+                # Define the Lambda expression to update the interval of NetStim during simulation
+                updated_interval = lambda: setattr(netstim, "interval", self._sine_netstim(frequency))
+
+                # Register the callback function to run at every dt step
+                updater = h.CVode()
+                updater.extra_scatter_gather(0, updated_interval)
+                print(f"Frequency: {frequency} Hz")
+                print(f"Initial interval: {netstim.interval} ms")
+                print(f"Updated interval: {updated_interval}")
+            else:
+                netstim.interval = interval
+
+            netstim.number = number
+            netstim.start = start
+            netstim.noise = noise
 
             nc = h.NetCon(netstim, chosen_syn)
             nc.weight[0], nc.delay, nc.threshold = weight, delay, threshold
@@ -980,9 +998,14 @@ class CA1_PC_cAC_sig:
 
             print(f"Completed simulation for {sec_name}")
 
-    def netstimSyn_soma(self, interval, number, start, noise, weight, delay, threshold, tstop, loc=0.5):
+            # Clean up the callback after simulation completes to avoid leaks
+            if frequency > 0:
+                updater.extra_scatter_gather_remove(0, updated_interval)
+
+    def netstimSyn_soma(self, frequency, interval, start, noise, weight, delay, threshold, tstop, number=1e9, loc=0.5):
         """Inject synaptic current into the soma
         Args:
+        frequency (float): Frequency of spikes (Hz)
         interval (float): Mean interval between spikes (ms)
         number (int): Number of spikes
         start (float): Start time of first spike (ms)
@@ -999,7 +1022,22 @@ class CA1_PC_cAC_sig:
         netstim = h.NetStim()
 
         # Configure NetStim parameters
-        netstim.interval = interval     # Mean interval between spikes (ms)
+        if frequency > 0:
+            # Set the initial interval at t=0
+            netstim.interval = self._sine_netstim(frequency)
+
+            # Define the Lambda expression to update the interval of NetStim during simulation
+            updated_interval = lambda: setattr(netstim, "interval", self._sine_netstim(frequency))
+
+            # Register the callback function to run at every dt step
+            updater = h.CVode()
+            updater.extra_scatter_gather(0, updated_interval)
+            print(f"Frequency: {frequency} Hz")
+            print(f"Initial interval: {netstim.interval} ms")
+            print(f"Updated interval: {updated_interval}")
+        else:
+            netstim.interval = interval
+
         netstim.number = number       # Number of spikes
         netstim.start = start        # Start time of first spike (ms)
         netstim.noise = noise       # Randomness (0=deterministic, 1=Poisson)
@@ -1018,6 +1056,10 @@ class CA1_PC_cAC_sig:
         # Running simulation
         h.finitialize(-65 * mV)
         h.continuerun(tstop)
+
+        # Clean up the callback after simulation completes to avoid leaks
+        if frequency > 0:
+            updater.extra_scatter_gather_remove(0, updated_interval)
 
         # get results
         # v_apic_array = np.array(v_apical)
@@ -1248,6 +1290,29 @@ class CA1_PC_cAC_sig:
         soma_syn.tau = 2
         soma_syn.e = 0
         return soma_syn
+    
+    def _sine_netstim(self, frequency, base_rate=50, amp=30):
+        """ Deliver sine waves to the soma if frequency was not 0 in netstimSyn_soma
+        Args:
+        frequency (float): frequency of the wave
+        base_rate (int): [Default value=50] Base firing rate in Hz (will be used as the center waves to prevent negative waves)
+        amp: [Default value=30] Amplitude of rate modulation in Hz (how much the waves will disperse from the central base_rate
+        """
+        # Convert current time 'h.t' from milliseconds to seconds
+        t_sec = h.t / 1000.0
+        
+        # Calculate modulated firing rate: F(t) = base_rate + amp * sin(2 * pi * f * t)
+        inst_rate = base_rate + amp * np.sin(2 * np.pi * frequency * t_sec)
+        
+        # Avoid division by zero or negative rates
+        if inst_rate <= 0.1:
+            inst_rate = 0.1
+            
+        # Interval (ms) = 1000 / Rate (Hz)
+        interval = 1000.0 / inst_rate
+        print(f"The rate now is: {inst_rate} Hz")
+
+        return interval
 
     def _Apicalsynapse_info(self, sections=None, loc=0.5):
         """Get apical synapse information
